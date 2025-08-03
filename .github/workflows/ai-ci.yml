@@ -1,0 +1,10 @@
+name: ai-pipeline
+on: [push]
+
+jobs:
+  plan:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude /orchestrator plan
