@@ -223,8 +223,8 @@ class GitHubIntegration:
 def load_github_config() -> Optional[GitHubConfig]:
     """Load GitHub configuration from environment variables"""
     token = os.getenv('REPO_TOKEN')
-    repo_owner = os.getenv('GITHUB_REPO_OWNER', 'AmosPulse')
-    repo_name = os.getenv('GITHUB_REPO_NAME', 'proof-stamp')
+    repo_owner = os.getenv('REPO_OWNER', 'AmosPulse')  # Changed from GITHUB_REPO_OWNER
+    repo_name = os.getenv('REPO_NAME', 'proof-stamp')   # Changed from GITHUB_REPO_NAME
     project_id = os.getenv('PROJECT_ID')  # Optional
     
     if not token:

@@ -21,9 +21,10 @@ class StuckGuard:
         self.check_interval = check_interval
         self.monitored_tasks: Dict[str, TaskMonitor] = {}
         self.stuck_tasks: Set[str] = set()
+        self.task_dependencies: Dict[str, Set[str]] = {}  # task_id -> set of dependency_ids
         self.running = False
 
-    async def register_task(self, task_id: str, timeout: Optional[float] = None) -> None:
+    async def register_task(self, task_id: str, timeout: Optional[float] = None, dependencies: Optional[Set[str]] = None) -> None:
         current_time = time.time()
         monitor = TaskMonitor(
             task_id=task_id,
@@ -32,6 +33,7 @@ class StuckGuard:
             timeout_threshold=timeout or self.default_timeout
         )
         self.monitored_tasks[task_id] = monitor
+        self.task_dependencies[task_id] = dependencies or set()
         print(f"[StuckGuard] Registered task: {task_id}")
 
     async def update_progress(self, task_id: str) -> None:
@@ -45,6 +47,8 @@ class StuckGuard:
         if task_id in self.monitored_tasks:
             del self.monitored_tasks[task_id]
             self.stuck_tasks.discard(task_id)
+            if task_id in self.task_dependencies:
+                del self.task_dependencies[task_id]
             print(f"[StuckGuard] Task {task_id} completed and removed from monitoring")
 
     async def check_stuck_tasks(self) -> Set[str]:
@@ -79,12 +83,82 @@ class StuckGuard:
             return True
         return False
 
+    async def detect_dependency_cycles(self) -> Set[Set[str]]:
+        """Detect circular dependencies using DFS"""
+        cycles = set()
+        visited = set()
+        rec_stack = set()
+        
+        def dfs(task_id: str, path: list) -> Optional[list]:
+            if task_id in rec_stack:
+                # Found cycle - extract it
+                cycle_start = path.index(task_id)
+                return path[cycle_start:] + [task_id]
+            
+            if task_id in visited:
+                return None
+            
+            visited.add(task_id)
+            rec_stack.add(task_id)
+            path.append(task_id)
+            
+            # Check dependencies
+            for dep_id in self.task_dependencies.get(task_id, set()):
+                if dep_id in self.task_dependencies:  # Only check monitored tasks
+                    cycle = dfs(dep_id, path.copy())
+                    if cycle:
+                        cycles.add(frozenset(cycle))
+            
+            rec_stack.remove(task_id)
+            path.pop()
+            return None
+        
+        # Check all tasks
+        for task_id in self.task_dependencies:
+            if task_id not in visited:
+                dfs(task_id, [])
+        
+        return {set(cycle) for cycle in cycles}
+
+    async def check_dependency_blocks(self) -> Dict[str, str]:
+        """Check for tasks blocked by dependencies and return blocking reasons"""
+        blocked_tasks = {}
+        
+        for task_id, dependencies in self.task_dependencies.items():
+            if task_id not in self.monitored_tasks:
+                continue
+                
+            for dep_id in dependencies:
+                # Check if dependency is stuck or failed
+                if dep_id in self.stuck_tasks:
+                    blocked_tasks[task_id] = f"Blocked by stuck dependency: {dep_id}"
+                    break
+                elif dep_id in self.monitored_tasks:
+                    # Check if dependency has been running too long
+                    dep_monitor = self.monitored_tasks[dep_id]
+                    if time.time() - dep_monitor.start_time > dep_monitor.timeout_threshold:
+                        blocked_tasks[task_id] = f"Blocked by timeout dependency: {dep_id}"
+                        break
+        
+        return blocked_tasks
+
     async def start_monitoring(self) -> None:
         self.running = True
         print("[StuckGuard] Started monitoring")
         
         while self.running:
             await self.check_stuck_tasks()
+            
+            # Check for dependency cycles every 5 minutes
+            if int(time.time()) % 300 == 0:  # Every 5 minutes
+                cycles = await self.detect_dependency_cycles()
+                if cycles:
+                    print(f"[StuckGuard] ALERT: Dependency cycles detected: {cycles}")
+                
+                blocked = await self.check_dependency_blocks()
+                if blocked:
+                    print(f"[StuckGuard] ALERT: Tasks blocked by dependencies: {blocked}")
+            
             await asyncio.sleep(self.check_interval)
 
     async def stop_monitoring(self) -> None:

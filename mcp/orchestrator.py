@@ -3,7 +3,7 @@
 import asyncio
 import time
 import uuid
-from typing import Dict, List, Optional, Callable, Any, Set
+from typing import Dict, List, Optional, Callable, Any, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import json
@@ -87,7 +87,7 @@ class Orchestrator:
         self.tasks[task_id] = task
         
         # Register with stuck guard
-        await self.stuck_guard.register_task(task_id)
+        await self.stuck_guard.register_task(task_id, dependencies=dependencies)
         
         print(f"[Orchestrator] Created task {task_id}: {name}")
         return task_id

@@ -22,11 +22,11 @@ async def dispatch():
     # Load GitHub configuration
     config = load_github_config()
     if not config:
-        print("❌ GitHub configuration not found. Please set up environment variables:")
-        print("   - GITHUB_TOKEN: Your GitHub personal access token")
-        print("   - GITHUB_REPO_OWNER: Repository owner (default: AmosPulse)")
-        print("   - GITHUB_REPO_NAME: Repository name (default: proof-stamp)")
-        print("   - GITHUB_PROJECT_ID: Project board ID (optional)")
+        print("X GitHub configuration not found. Please set up environment variables:")
+        print("   - REPO_TOKEN: Your GitHub personal access token")
+        print("   - REPO_OWNER: Repository owner (default: AmosPulse)")
+        print("   - REPO_NAME: Repository name (default: proof-stamp)")
+        print("   - PROJECT_ID: Project board ID (optional)")
         return False
     
     print(f"[OK] GitHub config loaded:")

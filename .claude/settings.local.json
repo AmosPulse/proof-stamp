@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(set REPO_OWNER=AmosPulse)",
+      "Bash(set REPO_NAME=proof-stamp)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
