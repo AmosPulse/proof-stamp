@@ -4,7 +4,10 @@ on: [push]
 jobs:
   plan:
     runs-on: windows-latest
+    env:
+      CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - run: npm install -g @anthropic-ai/claude-code
+      - run: echo "${{ secrets.CLAUDE_API_KEY }}" | claude auth login --api-key-stdin
       - run: claude /orchestrator plan
