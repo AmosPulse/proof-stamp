@@ -139,67 +139,43 @@ class GitHubIntegration:
             print(f"[ERROR] Error assigning issue to agent: {e}")
             return False
 
-    async def _move_issue_to_column(self, issue_number: str, column_name: str) -> bool:
-        """Move an issue to a specific project board column"""
+    async def _update_issue_labels(self, issue_number: str, status: str) -> bool:
+        """Update issue labels to reflect status"""
         try:
-            if not self.config.project_id:
-                print("[WARNING] No project ID configured, cannot move issue to column")
-                return False
-                
-            # First, get the project columns
-            columns_url = f"https://api.github.com/projects/columns?project_id={self.config.project_id}"
+            # Get current issue to preserve existing labels
+            issue_url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues/{issue_number}"
             
             async with aiohttp.ClientSession() as session:
-                # Get project columns
-                async with session.get(columns_url, headers=self.headers) as response:
-                    if response.status != 200:
-                        print(f"[WARNING] Failed to get project columns: {response.status} - Project board may not have columns set up")
-                        return False
-                    
-                    columns = await response.json()
-                    target_column = None
-                    
-                    for column in columns:
-                        if column['name'].lower() == column_name.lower():
-                            target_column = column
-                            break
-                    
-                    if not target_column:
-                        print(f"[WARNING] Column '{column_name}' not found in project - you may need to create project board columns")
-                        return False
-                
-                # Get the issue's current project card (if any)
-                issue_url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues/{issue_number}"
                 async with session.get(issue_url, headers=self.headers) as response:
                     if response.status != 200:
                         print(f"[ERROR] Failed to get issue: {response.status}")
                         return False
                     
                     issue_data = await response.json()
-                    issue_node_id = issue_data['node_id']
+                    current_labels = [label['name'] for label in issue_data.get('labels', [])]
                 
-                # Move the card to the target column
-                cards_url = f"https://api.github.com/projects/columns/{target_column['id']}/cards"
-                card_data = {
-                    "content_id": issue_data['id'],
-                    "content_type": "Issue"
-                }
+                # Remove old status labels and add new one
+                status_labels = ['status:to-do', 'status:in-progress', 'status:review', 'status:done']
+                new_labels = [label for label in current_labels if label not in status_labels]
+                new_labels.append(f"status:{status.replace('_', '-')}")
                 
-                async with session.post(cards_url, headers=self.headers, json=card_data) as response:
-                    if response.status == 201:
-                        print(f"[OK] Moved issue #{issue_number} to '{column_name}' column")
+                # Update issue labels
+                update_data = {"labels": new_labels}
+                async with session.patch(issue_url, headers=self.headers, json=update_data) as response:
+                    if response.status == 200:
+                        print(f"[OK] Updated issue #{issue_number} status label to 'status:{status.replace('_', '-')}'")
                         return True
                     else:
                         error_text = await response.text()
-                        print(f"[ERROR] Failed to move issue to column: {response.status} - {error_text}")
+                        print(f"[ERROR] Failed to update issue labels: {response.status} - {error_text}")
                         return False
                         
         except Exception as e:
-            print(f"[ERROR] Error moving issue to column: {e}")
+            print(f"[ERROR] Error updating issue labels: {e}")
             return False
 
     async def update_issue_status(self, issue_number: str, status: str, agent_name: str = None) -> bool:
-        """Update issue status and move to appropriate project board column"""
+        """Update issue status using labels only (no project board columns)"""
         try:
             status_mapping = {
                 "to_do": "To Do",
@@ -208,23 +184,23 @@ class GitHubIntegration:
                 "done": "Done"
             }
             
-            column_name = status_mapping.get(status.lower(), "To Do")
+            status_name = status_mapping.get(status.lower(), "To Do")
             
-            # Move to appropriate column
-            moved = await self._move_issue_to_column(issue_number, column_name)
+            # Update issue labels with status
+            labels_updated = await self._update_issue_labels(issue_number, status)
             
-            # Add status comment
-            comment_body = f"🔄 **Status Update:** {column_name}"
+            # Add status comment for visibility
+            comment_body = f"**Status Update:** {status_name}"
             if agent_name:
                 comment_body += f" (by {agent_name})"
             
             # Add status-specific information
             if status.lower() == "in_progress":
-                comment_body += "\n\n✅ Work has begun on this task."
+                comment_body += "\n\nWork has begun on this task."
             elif status.lower() == "review":
-                comment_body += "\n\n👀 Task completed and ready for review."
+                comment_body += "\n\nTask completed and ready for review."
             elif status.lower() == "done":
-                comment_body += "\n\n🎉 Task completed successfully!"
+                comment_body += "\n\nTask completed successfully!"
             
             url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues/{issue_number}/comments"
             comment_data = {"body": comment_body}
@@ -232,12 +208,12 @@ class GitHubIntegration:
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=self.headers, json=comment_data) as response:
                     if response.status == 201:
-                        print(f"[OK] Updated issue #{issue_number} status to '{column_name}'")
+                        print(f"[OK] Updated issue #{issue_number} status to '{status_name}'")
                         return True
                     else:
                         error_text = await response.text()
                         print(f"[ERROR] Failed to add status comment: {response.status} - {error_text}")
-                        return moved  # Return True if column move succeeded
+                        return labels_updated  # Return True if labels were updated
                         
         except Exception as e:
             print(f"[ERROR] Error updating issue status: {e}")
@@ -411,10 +387,8 @@ class GitHubIntegration:
                         if assigned_agent:
                             await self._assign_issue_to_agent(issue_number, assigned_agent)
                         
-                        # Add to project board if configured and set to "To Do" status
-                        if self.config.project_id:
-                            await self.add_issue_to_project(issue_number)
-                            await self.update_issue_status(issue_number, "to_do")
+                        # Set initial status to "To Do"
+                        await self.update_issue_status(issue_number, "to_do")
                         
                         # Small delay to avoid rate limiting
                         await asyncio.sleep(0.5)

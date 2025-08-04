@@ -150,8 +150,8 @@ async def demo_agent_workflow(max_concurrent_agents: int = 3):
     
     print("\n" + "=" * 50)
     print("All agents completed their work!")
-    print("Check your GitHub project board - issues should have moved through:")
-    print("  To Do → In Progress → Review → Done")
+    print("Check your GitHub issues - they should show status progression:")
+    print("  To Do -> In Progress -> Review -> Done (via labels and comments)")
     
     return True
 

@@ -24,5 +24,7 @@ jobs:
         run: python dispatch.py
       - name: Cleanup and Organize Issues
         run: python cleanup_and_organize.py
+      - name: Reset All Issues to To Do Status
+        run: python reset_all_to_todo.py
       - name: Demo Agent Workflow System
         run: python mcp/agent_workflow.py
