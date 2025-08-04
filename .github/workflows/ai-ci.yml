@@ -6,8 +6,19 @@ jobs:
     runs-on: windows-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+      GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+      GITHUB_PROJECT_ID: ${{ secrets.GITHUB_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - run: npm install -g @anthropic-ai/claude-code
-
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
       - run: claude /orchestrator plan
+      - name: Dispatch backlog to GitHub Issues
+        run: python dispatch.py
