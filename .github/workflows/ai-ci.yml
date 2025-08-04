@@ -9,4 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install -g @anthropic-ai/claude-code
+      - run: |
+          mkdir -p ~/.claude
+          echo '{"apiKey": "${{ secrets.CLAUDE_API_KEY }}"}' > ~/.claude/settings.json
       - run: claude /orchestrator plan
