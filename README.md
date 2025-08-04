@@ -10,6 +10,13 @@
 
 ## ⚡ Quick Start (15 minutes)
 
+### **🔑 Before You Start - Gather These:**
+- **Anthropic API Key** (`sk-ant-...`) from https://console.anthropic.com/
+- **GitHub Personal Access Token** (`ghp-...`) with `repo`, `project`, `workflow` scopes
+- **GitHub Project Board** created at https://github.com/users/YOUR_USERNAME/projects
+- **Project Board ID** (`PVT_...`) from browser dev tools
+
+### **📚 Setup Guides:**
 1. **[📖 Quick Setup Guide](./QUICK_SETUP.md)** - Get running in 15 minutes
 2. **[📚 Complete Blueprint](./AI_FACTORY_BLUEPRINT.md)** - Full documentation & advanced features
 3. **[🔧 GitHub Setup](./GITHUB_SETUP.md)** - Detailed configuration instructions

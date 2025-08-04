@@ -23,17 +23,90 @@
 
 ---
 
-## 📋 Prerequisites
+## 📋 Prerequisites & Preparation
 
-### **Required Accounts & Tools:**
-- GitHub account with repository access
-- Anthropic API account with Claude API key
-- GitHub Project board (V2 - new projects)
-- Basic knowledge of GitHub Actions and secrets
+> **🎯 Gather these items BEFORE starting setup to complete everything in one session**
+
+### **Required Accounts & Access:**
+- ✅ GitHub account with repository access
+- ✅ Anthropic API account with Claude API key
+- ✅ Repository admin access (for secrets and Actions)
+- ✅ Basic knowledge of GitHub Actions and secrets
+
+### **🔑 Items to Gather/Create (Do This First!):**
+
+#### **1. Anthropic API Key**
+- **Where**: https://console.anthropic.com/
+- **What**: Create API key (starts with `sk-ant-`)
+- **Copy**: Save this key - you'll need it for `CLAUDE_API_KEY` secret
+- **Format**: `sk-ant-api03-...` (long string)
+
+#### **2. GitHub Personal Access Token**
+- **Where**: https://github.com/settings/tokens
+- **What**: Generate new token (classic) with these scopes:
+  - ✅ `repo` (Full control of repositories)
+  - ✅ `project` (Full control of projects)
+  - ✅ `workflow` (Update GitHub Action workflows)
+- **Copy**: Save this token - you'll need it for `REPO_TOKEN` secret
+- **Format**: `ghp_...` (40 characters)
+- **⚠️ Important**: Copy immediately - GitHub only shows it once!
+
+#### **3. GitHub Project Board**
+- **Where**: https://github.com/users/YOUR_USERNAME/projects
+- **What**: Create new project (Board template)
+- **Name**: Choose a name (e.g., "AI Factory Tasks")
+- **Visibility**: Public or Private (your choice)
+
+#### **4. GitHub Project ID**
+- **Where**: Your project board URL
+- **How**: Open project → F12 (Developer Tools) → Network tab → Refresh → Find GraphQL request → Look for `id` field starting with `PVT_`
+- **Copy**: Save this ID - you'll need it for `PROJECT_ID` secret
+- **Format**: `PVT_kwHOC-KrAM4A_jzO` (base64-like string)
+
+#### **5. Repository Information**
+- **Repository URL**: Where you'll deploy the AI factory
+- **Repository name**: The repo name (for file paths)
+- **Admin access**: Confirm you can add secrets and enable Actions
+
+### **📝 Pre-Setup Checklist (Complete Before Starting):**
+
+**Accounts & Permissions:**
+- [ ] GitHub account with repo admin access
+- [ ] Anthropic account with API access
+- [ ] Repository created/selected for AI factory
+
+**Keys & Tokens (Have These Ready):**
+- [ ] **Anthropic API Key**: `sk-ant-...` (copied and saved)
+- [ ] **Personal Access Token**: `ghp_...` (copied and saved)
+- [ ] **Project Board ID**: `PVT_...` (copied and saved)
+
+**Project Setup:**
+- [ ] GitHub Project board created
+- [ ] Project board ID extracted
+- [ ] Repository ready for file uploads
+
+**Time & Environment:**
+- [ ] 20-30 minutes of uninterrupted time
+- [ ] Text editor ready for file creation
+- [ ] Browser tabs open to GitHub settings
+
+### **🎯 Why Gather Everything First?**
+
+**Without Preparation:**
+- ❌ Setup takes 45+ minutes with interruptions
+- ❌ Context switching between tasks
+- ❌ Risk of losing tokens/keys
+- ❌ Multiple incomplete sessions
+
+**With Preparation:**
+- ✅ Setup completes in 15-20 minutes
+- ✅ Single focused session
+- ✅ All information ready when needed
+- ✅ No interruptions or delays
 
 ### **Required Permissions:**
 - Repository admin access (for secrets and Actions)
-- Personal Access Token with specific scopes (detailed below)
+- Personal Access Token with specific scopes (detailed above)
 
 ---
 

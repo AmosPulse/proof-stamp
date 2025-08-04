@@ -2,6 +2,38 @@
 
 > **For detailed instructions, see [AI_FACTORY_BLUEPRINT.md](./AI_FACTORY_BLUEPRINT.md)**
 
+## 🔑 FIRST: Gather These Items (Do Before Setup!)
+
+**Have these ready before starting - saves 30+ minutes of interruptions:**
+
+### **Keys & Tokens to Create/Copy:**
+1. **Anthropic API Key** (`sk-ant-...`)
+   - Get from: https://console.anthropic.com/
+   - Copy and save securely
+
+2. **GitHub Personal Access Token** (`ghp_...`)
+   - Get from: https://github.com/settings/tokens
+   - Scopes needed: `repo`, `project`, `workflow`
+   - Copy immediately (shown only once!)
+
+3. **GitHub Project Board**
+   - Create at: https://github.com/users/YOUR_USERNAME/projects
+   - Use "Board" template
+
+4. **Project Board ID** (`PVT_...`)
+   - Open your project → F12 → Network → Refresh → Find GraphQL with `PVT_...`
+   - Copy the full ID string
+
+### **📝 Pre-Setup Checklist:**
+- [ ] **Anthropic API Key**: `sk-ant-...` (saved)
+- [ ] **Personal Access Token**: `ghp_...` (saved)
+- [ ] **Project Board**: Created and accessible
+- [ ] **Project Board ID**: `PVT_...` (saved)
+- [ ] **Repository**: Ready with admin access
+- [ ] **Time**: 20 minutes uninterrupted
+
+---
+
 ## ⚡ Super Quick Checklist
 
 ### **1. GitHub Project (2 min)**
