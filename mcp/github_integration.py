@@ -59,6 +59,85 @@ class GitHubIntegration:
         except Exception as e:
             print(f"[ERROR] Error creating GitHub issue: {e}")
             return None
+
+    def _assign_agent_to_task(self, task: Dict[str, Any], epic_title: str) -> Optional[str]:
+        """Auto-assign agent based on task content and epic type"""
+        task_text = task['task'].lower()
+        epic_lower = epic_title.lower()
+        
+        # Database/Storage tasks
+        if any(word in task_text for word in ['database', 'schema', 'migration', 'backup', 'restore']):
+            return 'architect'  # Database architecture decisions
+        
+        # Monitoring/Observability tasks  
+        if any(word in task_text for word in ['stuck-guard', 'timeout', 'monitoring', 'dashboard']):
+            if 'dashboard' in task_text:
+                return 'dashboard-smith'  # UI/Dashboard work
+            return 'stuck-guard'  # Monitoring logic
+        
+        # Cost/Budget tasks
+        if any(word in task_text for word in ['cost', 'budget', 'governor']):
+            return 'cost-governor'  # Assuming we have this agent
+        
+        # CI/CD and Deployment tasks
+        if any(word in task_text for word in ['github', 'workflow', 'deployment', 'pipeline', 'project board']):
+            return 'release-bot'  # Handles deployments and CI/CD
+        
+        # Notification/Communication tasks
+        if any(word in task_text for word in ['notification', 'email', 'alert', 'routing']):
+            return 'notification-agent'  # Assuming we have this
+        
+        # Web/Extension tasks
+        if any(word in task_text for word in ['extension', 'browser', 'web', 'scraping']):
+            return 'extension-builder'  # Web-related work
+            
+        # Crawling/Data extraction
+        if any(word in task_text for word in ['crawler', 'crawling', 'scraping', 'extraction']):
+            return 'crawler-bot'  # Data gathering
+        
+        # Watermarking/Content tasks
+        if any(word in task_text for word in ['watermark', 'content', 'proof', 'stamp']):
+            return 'watermark-guru'  # Content processing
+            
+        # Similarity/ML tasks  
+        if any(word in task_text for word in ['similarity', 'detection', 'duplicate', 'ml', 'model']):
+            return 'similarity-brain'  # AI/ML work
+        
+        # Testing/QA tasks
+        if any(word in task_text for word in ['test', 'testing', 'validation', 'qa', 'quality']):
+            return 'qa-bot'  # Quality assurance
+            
+        # Core orchestration tasks
+        if any(word in task_text for word in ['orchestrator', 'dependency', 'scheduling', 'resource']):
+            return 'architect'  # System architecture
+            
+        # Default to architect for system-level tasks
+        return 'architect'
+
+    async def _assign_issue_to_agent(self, issue_number: str, agent_name: str) -> bool:
+        """Assign a GitHub issue to an agent (as assignee)"""
+        try:
+            # In GitHub, we'll use the agent name as the assignee
+            # For now, we'll add a comment indicating the assigned agent
+            url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues/{issue_number}/comments"
+            
+            comment_data = {
+                "body": f"🤖 **Auto-assigned to agent:** `{agent_name}`\n\nThis issue has been automatically assigned based on the task content and agent expertise."
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=self.headers, json=comment_data) as response:
+                    if response.status == 201:
+                        print(f"[OK] Assigned issue #{issue_number} to agent: {agent_name}")
+                        return True
+                    else:
+                        error_text = await response.text()
+                        print(f"[ERROR] Failed to assign issue: {response.status} - {error_text}")
+                        return False
+                        
+        except Exception as e:
+            print(f"[ERROR] Error assigning issue to agent: {e}")
+            return False
     
     def _format_issue_body(self, task: Dict[str, Any], epic_title: str) -> str:
         """Format the issue body with task details"""
@@ -193,6 +272,11 @@ class GitHubIntegration:
                     issue_number = await self.create_issue_from_task(task, epic_title)
                     if issue_number:
                         epic_issues.append(issue_number)
+                        
+                        # Auto-assign to appropriate agent
+                        assigned_agent = self._assign_agent_to_task(task, epic_title)
+                        if assigned_agent:
+                            await self._assign_issue_to_agent(issue_number, assigned_agent)
                         
                         # Add to project board if configured
                         if self.config.project_id:

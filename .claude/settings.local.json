@@ -5,7 +5,13 @@
       "Bash(pip install:*)",
       "Bash(set REPO_OWNER=AmosPulse)",
       "Bash(set REPO_NAME=proof-stamp)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
