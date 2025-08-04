@@ -9,5 +9,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install -g @anthropic-ai/claude-code
-      - run: echo "${{ secrets.CLAUDE_API_KEY }}" | claude auth login --api-key-stdin
+      - run: claude auth login --api-key ${{ secrets.CLAUDE_API_KEY }}
       - run: claude /orchestrator plan
