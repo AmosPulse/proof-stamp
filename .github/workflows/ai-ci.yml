@@ -22,3 +22,5 @@ jobs:
       - run: claude /orchestrator plan
       - name: Dispatch backlog to GitHub Issues
         run: python dispatch.py
+      - name: Demo Agent Workflow System
+        run: python mcp/agent_workflow.py
