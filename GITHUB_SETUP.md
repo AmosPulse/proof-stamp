@@ -23,10 +23,11 @@ This guide helps you set up the automatic GitHub integration for the AI Factory 
 
 ### 2. Add Repository Secrets
 
-Go to your repository Settings → Secrets and variables → Actions → Repository secrets:
+Go to your repository Settings → Secrets and variables → Actions, and add:
 
 1. **CLAUDE_API_KEY** ✅ (Already set)
-2. **PROJECT_ID** ➕ (Add this)
+2. **REPO_TOKEN**: Your Personal Access Token (from step 1)
+3. **PROJECT_ID** ➕ (Add this)
    - Your project ID from: https://github.com/users/AmosPulse/projects/6/
    - To find the ID: Go to your project → Settings → copy the project ID
    - Note: Cannot use GITHUB_PROJECT_ID (GitHub doesn't allow secrets starting with GITHUB_)
@@ -65,8 +66,8 @@ Check:
 ## Troubleshooting
 
 **No issues created?**
-- Check GITHUB_TOKEN has correct permissions
-- Verify PROJECT_ID is set correctly
+- ❌ `REPO_TOKEN` not set or has insufficient permissions
+- ❌ `PROJECT_ID` not set (optional, but needed for project board integration)
 - Check GitHub Actions logs for errors
 
 **Issues created but not on project board?**

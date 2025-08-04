@@ -222,13 +222,13 @@ class GitHubIntegration:
 
 def load_github_config() -> Optional[GitHubConfig]:
     """Load GitHub configuration from environment variables"""
-    token = os.getenv('GITHUB_TOKEN')
+    token = os.getenv('REPO_TOKEN')
     repo_owner = os.getenv('GITHUB_REPO_OWNER', 'AmosPulse')
     repo_name = os.getenv('GITHUB_REPO_NAME', 'proof-stamp')
     project_id = os.getenv('PROJECT_ID')  # Optional
     
     if not token:
-        print("[ERROR] GITHUB_TOKEN environment variable not set")
+        print("[ERROR] REPO_TOKEN environment variable not set")
         return None
     
     return GitHubConfig(
