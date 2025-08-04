@@ -49,15 +49,15 @@ class GitHubIntegration:
                 async with session.post(url, headers=self.headers, json=issue_data) as response:
                     if response.status == 201:
                         issue = await response.json()
-                        print(f"✅ Created GitHub Issue #{issue['number']}: {task['task']}")
+                        print(f"[OK] Created GitHub Issue #{issue['number']}: {task['task']}")
                         return str(issue['number'])
                     else:
                         error_text = await response.text()
-                        print(f"❌ Failed to create issue: {response.status} - {error_text}")
+                        print(f"[ERROR] Failed to create issue: {response.status} - {error_text}")
                         return None
                         
         except Exception as e:
-            print(f"❌ Error creating GitHub issue: {e}")
+            print(f"[ERROR] Error creating GitHub issue: {e}")
             return None
     
     def _format_issue_body(self, task: Dict[str, Any], epic_title: str) -> str:
@@ -97,7 +97,7 @@ class GitHubIntegration:
     async def add_issue_to_project(self, issue_number: str) -> bool:
         """Add an issue to the GitHub Project board"""
         if not self.config.project_id:
-            print("⚠️  No project ID configured, skipping project board update")
+            print("[WARNING] No project ID configured, skipping project board update")
             return False
             
         try:
@@ -148,21 +148,21 @@ class GitHubIntegration:
                             if gql_response.status == 200:
                                 result = await gql_response.json()
                                 if 'errors' not in result:
-                                    print(f"✅ Added issue #{issue_number} to project board")
+                                    print(f"[OK] Added issue #{issue_number} to project board")
                                     return True
                                 else:
-                                    print(f"❌ GraphQL errors: {result['errors']}")
+                                    print(f"[ERROR] GraphQL errors: {result['errors']}")
                                     return False
                             else:
                                 error_text = await gql_response.text()
-                                print(f"❌ Failed to add to project: {gql_response.status} - {error_text}")
+                                print(f"[ERROR] Failed to add to project: {gql_response.status} - {error_text}")
                                 return False
                     else:
-                        print(f"❌ Failed to get issue details: {response.status}")
+                        print(f"[ERROR] Failed to get issue details: {response.status}")
                         return False
                         
         except Exception as e:
-            print(f"❌ Error adding issue to project: {e}")
+            print(f"[ERROR] Error adding issue to project: {e}")
             return False
 
     async def dispatch_backlog(self, backlog_path: str = "product/BACKLOG.yml") -> Dict[str, List[str]]:
@@ -173,7 +173,7 @@ class GitHubIntegration:
                 backlog_data = yaml.safe_load(file)
             
             if not backlog_data or 'backlog' not in backlog_data:
-                print("❌ No backlog data found in BACKLOG.yml")
+                print("[ERROR] No backlog data found in BACKLOG.yml")
                 return {}
             
             created_issues = {}
@@ -183,7 +183,7 @@ class GitHubIntegration:
                 epic_title = epic_data.get('title', epic_key)
                 tasks = epic_data.get('tasks', [])
                 
-                print(f"\n🚀 Processing epic: {epic_title}")
+                print(f"\n[PROCESSING] Epic: {epic_title}")
                 print(f"   Tasks to create: {len(tasks)}")
                 
                 epic_issues = []
@@ -202,22 +202,22 @@ class GitHubIntegration:
                         await asyncio.sleep(0.5)
                 
                 created_issues[epic_key] = epic_issues
-                print(f"✅ Created {len(epic_issues)} issues for epic: {epic_title}")
+                print(f"[OK] Created {len(epic_issues)} issues for epic: {epic_title}")
             
             # Summary
             total_issues = sum(len(issues) for issues in created_issues.values())
-            print(f"\n🎉 Dispatch complete! Created {total_issues} GitHub Issues across {len(created_issues)} epics")
+            print(f"\n[SUCCESS] Dispatch complete! Created {total_issues} GitHub Issues across {len(created_issues)} epics")
             
             return created_issues
             
         except FileNotFoundError:
-            print(f"❌ Backlog file not found: {backlog_path}")
+            print(f"[ERROR] Backlog file not found: {backlog_path}")
             return {}
         except yaml.YAMLError as e:
-            print(f"❌ Error parsing BACKLOG.yml: {e}")
+            print(f"[ERROR] Error parsing BACKLOG.yml: {e}")
             return {}
         except Exception as e:
-            print(f"❌ Error during dispatch: {e}")
+            print(f"[ERROR] Error during dispatch: {e}")
             return {}
 
 def load_github_config() -> Optional[GitHubConfig]:
@@ -225,10 +225,10 @@ def load_github_config() -> Optional[GitHubConfig]:
     token = os.getenv('GITHUB_TOKEN')
     repo_owner = os.getenv('GITHUB_REPO_OWNER', 'AmosPulse')
     repo_name = os.getenv('GITHUB_REPO_NAME', 'proof-stamp')
-    project_id = os.getenv('GITHUB_PROJECT_ID')  # Optional
+    project_id = os.getenv('PROJECT_ID')  # Optional
     
     if not token:
-        print("❌ GITHUB_TOKEN environment variable not set")
+        print("[ERROR] GITHUB_TOKEN environment variable not set")
         return None
     
     return GitHubConfig(
