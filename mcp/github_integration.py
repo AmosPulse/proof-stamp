@@ -348,9 +348,32 @@ class GitHubIntegration:
             print(f"[ERROR] Error adding issue to project: {e}")
             return False
 
+    async def _check_existing_issues(self) -> List[str]:
+        """Check for existing issues to prevent duplicates"""
+        try:
+            url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues"
+            params = {"state": "open", "labels": "ai-factory", "per_page": 100}
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=self.headers, params=params) as response:
+                    if response.status == 200:
+                        issues = await response.json()
+                        existing_titles = [issue['title'] for issue in issues]
+                        print(f"[INFO] Found {len(existing_titles)} existing ai-factory issues")
+                        return existing_titles
+                    else:
+                        print(f"[WARNING] Failed to check existing issues: {response.status}")
+                        return []
+        except Exception as e:
+            print(f"[WARNING] Error checking existing issues: {e}")
+            return []
+
     async def dispatch_backlog(self, backlog_path: str = "product/BACKLOG.yml") -> Dict[str, List[str]]:
         """Main dispatch function: reads backlog and creates GitHub Issues"""
         try:
+            # Check for existing issues to prevent duplicates
+            existing_titles = await self._check_existing_issues()
+            
             # Read the backlog file
             with open(backlog_path, 'r', encoding='utf-8') as file:
                 backlog_data = yaml.safe_load(file)
@@ -373,6 +396,12 @@ class GitHubIntegration:
                 
                 # Create issues for each task
                 for task in tasks:
+                    # Check if this issue already exists
+                    proposed_title = f"[{epic_title}] {task['task']}"
+                    if proposed_title in existing_titles:
+                        print(f"[SKIP] Issue already exists: {proposed_title}")
+                        continue
+                    
                     issue_number = await self.create_issue_from_task(task, epic_title)
                     if issue_number:
                         epic_issues.append(issue_number)
