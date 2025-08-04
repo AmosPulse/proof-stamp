@@ -1,0 +1,3 @@
+[[servers]]
+name = "db"
+url  = "postgres://postgres@localhost:5432/postgres"
