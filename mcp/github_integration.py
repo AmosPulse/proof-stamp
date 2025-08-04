@@ -153,7 +153,7 @@ class GitHubIntegration:
                 # Get project columns
                 async with session.get(columns_url, headers=self.headers) as response:
                     if response.status != 200:
-                        print(f"[ERROR] Failed to get project columns: {response.status}")
+                        print(f"[WARNING] Failed to get project columns: {response.status} - Project board may not have columns set up")
                         return False
                     
                     columns = await response.json()
@@ -165,7 +165,7 @@ class GitHubIntegration:
                             break
                     
                     if not target_column:
-                        print(f"[ERROR] Column '{column_name}' not found in project")
+                        print(f"[WARNING] Column '{column_name}' not found in project - you may need to create project board columns")
                         return False
                 
                 # Get the issue's current project card (if any)

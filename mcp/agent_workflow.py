@@ -102,7 +102,7 @@ class AgentWorkflow:
 
 async def demo_agent_workflow(max_concurrent_agents: int = 3):
     """Demo the agent workflow system"""
-    print("🤖 AGENT WORKFLOW SYSTEM DEMO")
+    print("AGENT WORKFLOW SYSTEM DEMO")
     print("=" * 50)
     
     # Load GitHub configuration
@@ -149,7 +149,7 @@ async def demo_agent_workflow(max_concurrent_agents: int = 3):
         await asyncio.gather(*active_tasks)
     
     print("\n" + "=" * 50)
-    print("🎉 All agents completed their work!")
+    print("All agents completed their work!")
     print("Check your GitHub project board - issues should have moved through:")
     print("  To Do → In Progress → Review → Done")
     

@@ -11,7 +11,8 @@
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
       "Bash(gh issue list:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(gh issue view:*)"
     ],
     "deny": []
   }
