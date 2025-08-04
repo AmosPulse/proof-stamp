@@ -22,5 +22,7 @@ jobs:
       - run: claude /orchestrator plan
       - name: Dispatch backlog to GitHub Issues
         run: python dispatch.py
+      - name: Cleanup and Organize Issues
+        run: python cleanup_and_organize.py
       - name: Demo Agent Workflow System
         run: python mcp/agent_workflow.py

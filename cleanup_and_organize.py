@@ -66,7 +66,7 @@ class IssueOrganizer:
                                 # Add closing comment
                                 comment_url = f"{url}/comments"
                                 comment_data = {
-                                    "body": "🔄 **Closed as duplicate** - This issue was automatically created multiple times. The original issue in the #109-#126 range will be used instead."
+                                    "body": "**Closed as duplicate** - This issue was automatically created multiple times. The original issue in the #109-#126 range will be used instead."
                                 }
                                 await session.post(comment_url, headers=self.github.headers, json=comment_data)
                                 
@@ -136,7 +136,7 @@ class IssueOrganizer:
 
 async def main():
     """Main cleanup and organization function"""
-    print("🧹 CLEANUP AND ORGANIZATION SYSTEM")
+    print("CLEANUP AND ORGANIZATION SYSTEM")
     print("=" * 50)
     
     # Load GitHub configuration
@@ -164,7 +164,7 @@ async def main():
     print(f"Organized {organized_count} original issues")
     
     print("\n" + "=" * 50)
-    print("✅ CLEANUP COMPLETE!")
+    print("CLEANUP COMPLETE!")
     print(f"- Closed {duplicates_closed} duplicate issues")
     print(f"- Organized {organized_count} original issues")
     print("- Issues #109-#126 now have proper agent assignments and status")
