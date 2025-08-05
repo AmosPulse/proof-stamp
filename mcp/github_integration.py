@@ -280,21 +280,31 @@ class GitHubIntegration:
                     
                     print(f"[DEBUG] Available fields:")
                     for field in project_data['fields']['nodes']:
-                        print(f"[DEBUG]   - {field['name']} ({field.get('__typename', 'Unknown')})")
-                        if 'options' in field:
+                        field_name = field.get('name', 'NO_NAME')
+                        field_type = field.get('__typename', 'Unknown')
+                        print(f"[DEBUG]   - Field: {field_name} (Type: {field_type})")
+                        print(f"[DEBUG]     Raw field data: {field}")
+                        if 'options' in field and field['options']:
                             for opt in field['options']:
-                                print(f"[DEBUG]     Option: {opt['name']} (id: {opt['id']})")
+                                opt_name = opt.get('name', 'NO_NAME')
+                                opt_id = opt.get('id', 'NO_ID')
+                                print(f"[DEBUG]     Option: {opt_name} (id: {opt_id})")
+                        else:
+                            print(f"[DEBUG]     No options found for this field")
                     
                     for field in project_data['fields']['nodes']:
-                        if field['name'].lower() in ['status', 'state']:
-                            status_field_id = field['id']
-                            print(f"[DEBUG] Found status field: {field['name']} (id: {status_field_id})")
-                            for option in field['options']:
-                                print(f"[DEBUG] Checking option: '{option['name']}' vs '{status_name}'")
-                                if option['name'].lower() == status_name.lower():
-                                    status_option_id = option['id']
-                                    print(f"[DEBUG] Found matching option: {option['name']} (id: {status_option_id})")
-                                    break
+                        field_name = field.get('name', '').lower()
+                        if field_name in ['status', 'state']:
+                            status_field_id = field.get('id')
+                            print(f"[DEBUG] Found status field: {field.get('name')} (id: {status_field_id})")
+                            if 'options' in field and field['options']:
+                                for option in field['options']:
+                                    option_name = option.get('name', '')
+                                    print(f"[DEBUG] Checking option: '{option_name}' vs '{status_name}'")
+                                    if option_name.lower() == status_name.lower():
+                                        status_option_id = option.get('id')
+                                        print(f"[DEBUG] Found matching option: {option_name} (id: {status_option_id})")
+                                        break
                             break
                     
                     if not status_field_id:
