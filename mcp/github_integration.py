@@ -271,8 +271,40 @@ class GitHubIntegration:
                             break
                     
                     if not project_item_id:
-                        print(f"[WARNING] Issue #{issue_number} not found in project")
-                        return False
+                        print(f"[INFO] Issue #{issue_number} not found in project, adding it...")
+                        # Add the issue to the project first
+                        add_success = await self.add_issue_to_project(issue_number)
+                        if not add_success:
+                            print(f"[ERROR] Failed to add issue #{issue_number} to project")
+                            return False
+                        
+                        # Re-query to get the project item ID
+                        async with session.post(
+                            "https://api.github.com/graphql",
+                            headers=graphql_headers,
+                            json=graphql_data
+                        ) as gql_response2:
+                            if gql_response2.status != 200:
+                                print(f"[ERROR] Failed to re-query project after adding issue")
+                                return False
+                            
+                            result2 = await gql_response2.json()
+                            if 'errors' in result2:
+                                print(f"[ERROR] GraphQL re-query errors: {result2['errors']}")
+                                return False
+                            
+                            project_data = result2['data']['node']
+                            
+                            # Find the project item for this issue (retry)
+                            for item in project_data['items']['nodes']:
+                                if item['content'] and item['content']['id'] == content_id:
+                                    project_item_id = item['id']
+                                    print(f"[OK] Found issue #{issue_number} in project after adding")
+                                    break
+                        
+                        if not project_item_id:
+                            print(f"[ERROR] Issue #{issue_number} still not found in project after adding")
+                            return False
                     
                     # Find the Status field and the matching option
                     status_field_id = None
@@ -455,6 +487,8 @@ class GitHubIntegration:
         if not self.config.project_id:
             print("[WARNING] No project ID configured, skipping project board update")
             return False
+        
+        print(f"[DEBUG] Adding issue #{issue_number} to project {self.config.project_id}")
             
         try:
             # GitHub Projects v2 API requires GraphQL
