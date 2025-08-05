@@ -177,6 +177,8 @@ class GitHubIntegration:
     async def _update_project_status_field(self, issue_number: str, status_name: str) -> bool:
         """Update the status field of an issue in GitHub Projects v2"""
         try:
+            print(f"[DEBUG] Attempting to update project status field for issue #{issue_number} to '{status_name}'")
+            
             # First, get the issue's node ID and project item ID
             issue_url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues/{issue_number}"
             
@@ -188,6 +190,8 @@ class GitHubIntegration:
                     
                     issue_data = await response.json()
                     content_id = issue_data['node_id']
+                    print(f"[DEBUG] Issue node_id: {content_id}")
+                    print(f"[DEBUG] Project ID: {self.config.project_id}")
                 
                 # Get project item ID and field information using GraphQL
                 graphql_headers = {
@@ -256,6 +260,9 @@ class GitHubIntegration:
                         print(f"[ERROR] Project not found: {self.config.project_id}")
                         return False
                     
+                    print(f"[DEBUG] Found project with {len(project_data['items']['nodes'])} items")
+                    print(f"[DEBUG] Found {len(project_data['fields']['nodes'])} fields")
+                    
                     # Find the project item for this issue
                     project_item_id = None
                     for item in project_data['items']['nodes']:
@@ -271,17 +278,32 @@ class GitHubIntegration:
                     status_field_id = None
                     status_option_id = None
                     
+                    print(f"[DEBUG] Available fields:")
                     for field in project_data['fields']['nodes']:
-                        if field['name'].lower() == 'status':
+                        print(f"[DEBUG]   - {field['name']} ({field.get('__typename', 'Unknown')})")
+                        if 'options' in field:
+                            for opt in field['options']:
+                                print(f"[DEBUG]     Option: {opt['name']} (id: {opt['id']})")
+                    
+                    for field in project_data['fields']['nodes']:
+                        if field['name'].lower() in ['status', 'state']:
                             status_field_id = field['id']
+                            print(f"[DEBUG] Found status field: {field['name']} (id: {status_field_id})")
                             for option in field['options']:
-                                if option['name'] == status_name:
+                                print(f"[DEBUG] Checking option: '{option['name']}' vs '{status_name}'")
+                                if option['name'].lower() == status_name.lower():
                                     status_option_id = option['id']
+                                    print(f"[DEBUG] Found matching option: {option['name']} (id: {status_option_id})")
                                     break
                             break
                     
-                    if not status_field_id or not status_option_id:
-                        print(f"[ERROR] Status field or option '{status_name}' not found in project")
+                    if not status_field_id:
+                        print(f"[ERROR] No status field found in project")
+                        return False
+                    
+                    if not status_option_id:
+                        print(f"[ERROR] Status option '{status_name}' not found in project")
+                        print(f"[DEBUG] Available options were: {[opt['name'] for field in project_data['fields']['nodes'] if 'options' in field for opt in field['options']]}")
                         return False
                     
                     # Update the project item's status field
