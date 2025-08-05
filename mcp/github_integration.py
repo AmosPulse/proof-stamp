@@ -174,8 +174,171 @@ class GitHubIntegration:
             print(f"[ERROR] Error updating issue labels: {e}")
             return False
 
+    async def _update_project_status_field(self, issue_number: str, status_name: str) -> bool:
+        """Update the status field of an issue in GitHub Projects v2"""
+        try:
+            # First, get the issue's node ID and project item ID
+            issue_url = f"{self.base_url}/repos/{self.config.repo_owner}/{self.config.repo_name}/issues/{issue_number}"
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(issue_url, headers=self.headers) as response:
+                    if response.status != 200:
+                        print(f"[ERROR] Failed to get issue: {response.status}")
+                        return False
+                    
+                    issue_data = await response.json()
+                    content_id = issue_data['node_id']
+                
+                # Get project item ID and field information using GraphQL
+                graphql_headers = {
+                    **self.headers,
+                    "Accept": "application/vnd.github.v4+json"
+                }
+                
+                # Query to get project item details and status field info
+                query = """
+                query($projectId: ID!, $contentId: ID!) {
+                    node(id: $projectId) {
+                        ... on ProjectV2 {
+                            items(first: 100) {
+                                nodes {
+                                    id
+                                    content {
+                                        ... on Issue {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                            fields(first: 20) {
+                                nodes {
+                                    ... on ProjectV2SingleSelectField {
+                                        id
+                                        name
+                                        options {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                """
+                
+                variables = {
+                    "projectId": self.config.project_id,
+                    "contentId": content_id
+                }
+                
+                graphql_data = {
+                    "query": query,
+                    "variables": variables
+                }
+                
+                async with session.post(
+                    "https://api.github.com/graphql",
+                    headers=graphql_headers,
+                    json=graphql_data
+                ) as gql_response:
+                    if gql_response.status != 200:
+                        error_text = await gql_response.text()
+                        print(f"[ERROR] GraphQL query failed: {gql_response.status} - {error_text}")
+                        return False
+                    
+                    result = await gql_response.json()
+                    if 'errors' in result:
+                        print(f"[ERROR] GraphQL errors: {result['errors']}")
+                        return False
+                    
+                    project_data = result['data']['node']
+                    if not project_data:
+                        print(f"[ERROR] Project not found: {self.config.project_id}")
+                        return False
+                    
+                    # Find the project item for this issue
+                    project_item_id = None
+                    for item in project_data['items']['nodes']:
+                        if item['content'] and item['content']['id'] == content_id:
+                            project_item_id = item['id']
+                            break
+                    
+                    if not project_item_id:
+                        print(f"[WARNING] Issue #{issue_number} not found in project")
+                        return False
+                    
+                    # Find the Status field and the matching option
+                    status_field_id = None
+                    status_option_id = None
+                    
+                    for field in project_data['fields']['nodes']:
+                        if field['name'].lower() == 'status':
+                            status_field_id = field['id']
+                            for option in field['options']:
+                                if option['name'] == status_name:
+                                    status_option_id = option['id']
+                                    break
+                            break
+                    
+                    if not status_field_id or not status_option_id:
+                        print(f"[ERROR] Status field or option '{status_name}' not found in project")
+                        return False
+                    
+                    # Update the project item's status field
+                    update_mutation = """
+                    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                        updateProjectV2ItemFieldValue(input: {
+                            projectId: $projectId
+                            itemId: $itemId
+                            fieldId: $fieldId
+                            value: { 
+                                singleSelectOptionId: $optionId
+                            }
+                        }) {
+                            projectV2Item {
+                                id
+                            }
+                        }
+                    }
+                    """
+                    
+                    update_variables = {
+                        "projectId": self.config.project_id,
+                        "itemId": project_item_id,
+                        "fieldId": status_field_id,
+                        "optionId": status_option_id
+                    }
+                    
+                    update_data = {
+                        "query": update_mutation,
+                        "variables": update_variables
+                    }
+                    
+                    async with session.post(
+                        "https://api.github.com/graphql",
+                        headers=graphql_headers,
+                        json=update_data
+                    ) as update_response:
+                        if update_response.status == 200:
+                            update_result = await update_response.json()
+                            if 'errors' not in update_result:
+                                print(f"[OK] Updated project status field for issue #{issue_number} to '{status_name}'")
+                                return True
+                            else:
+                                print(f"[ERROR] GraphQL update errors: {update_result['errors']}")
+                                return False
+                        else:
+                            error_text = await update_response.text()
+                            print(f"[ERROR] Failed to update project status: {update_response.status} - {error_text}")
+                            return False
+                        
+        except Exception as e:
+            print(f"[ERROR] Error updating project status field: {e}")
+            return False
+
     async def update_issue_status(self, issue_number: str, status: str, agent_name: str = None) -> bool:
-        """Update issue status using labels only (no project board columns)"""
+        """Update issue status using GitHub Projects v2 status field"""
         try:
             status_mapping = {
                 "to_do": "To Do",
@@ -186,8 +349,10 @@ class GitHubIntegration:
             
             status_name = status_mapping.get(status.lower(), "To Do")
             
-            # Update issue labels with status
-            labels_updated = await self._update_issue_labels(issue_number, status)
+            # Update project status field if project is configured
+            project_updated = False
+            if self.config.project_id:
+                project_updated = await self._update_project_status_field(issue_number, status_name)
             
             # Add status comment for visibility
             comment_body = f"**Status Update:** {status_name}"
@@ -208,12 +373,13 @@ class GitHubIntegration:
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=self.headers, json=comment_data) as response:
                     if response.status == 201:
-                        print(f"[OK] Updated issue #{issue_number} status to '{status_name}'")
+                        print(f"[OK] Updated issue #{issue_number} status to '{status_name}'" + 
+                              (" (project field updated)" if project_updated else " (comment only)"))
                         return True
                     else:
                         error_text = await response.text()
                         print(f"[ERROR] Failed to add status comment: {response.status} - {error_text}")
-                        return labels_updated  # Return True if labels were updated
+                        return project_updated  # Return True if project was updated
                         
         except Exception as e:
             print(f"[ERROR] Error updating issue status: {e}")
