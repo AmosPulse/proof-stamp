@@ -197,7 +197,7 @@ class GitHubIntegration:
                 
                 # Query to get project item details and status field info
                 query = """
-                query($projectId: ID!, $contentId: ID!) {
+                query($projectId: ID!) {
                     node(id: $projectId) {
                         ... on ProjectV2 {
                             items(first: 100) {
@@ -228,8 +228,7 @@ class GitHubIntegration:
                 """
                 
                 variables = {
-                    "projectId": self.config.project_id,
-                    "contentId": content_id
+                    "projectId": self.config.project_id
                 }
                 
                 graphql_data = {
